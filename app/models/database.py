@@ -1,3 +1,4 @@
+import logging
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -5,16 +6,10 @@ from sqlalchemy.ext.declarative import declarative_base
 
 import settings
 
-# 接続先DBの設定
-DATABASE = f'{settings.db}://{settings.username}:{settings.password}@{settings.host}:{settings.port}/{settings.database}?charset={settings.charset_type}'
 
-# Engine の作成
-engine = create_engine(DATABASE = f'{settings.db}://{settings.username}:{settings.password}@{settings.host}:{settings.port}/{settings.database}?charset={settings.charset_type}')
-
-# Sessionの作成
+logger = logging.getLogger(__name__)
+engine = create_engine(f'{settings.db}://{settings.user}:{settings.password}@{settings.host}:{settings.port}/{settings.database}')
 Session = scoped_session(sessionmaker(bind=engine))
-
-# modelで使用する
 Base = declarative_base()
 Base.query = Session.query_property()
 
@@ -26,9 +21,13 @@ def session_scope():
         yield session
         session.commit()
     except Exception as e:
+        logging.error(f'action=session_scoped error={e}')
         session.rollback()
         raise        
 
 
-def init_db():
+def init_db(drop):
+    import app.models.candle
+    if drop:
+        Base.metadata.drop_all(engine)
     Base.metadata.create_all(bind=engine)
