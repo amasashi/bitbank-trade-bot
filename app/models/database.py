@@ -31,3 +31,7 @@ def init_db(drop):
     if drop:
         Base.metadata.drop_all(engine)
     Base.metadata.create_all(bind=engine)
+    from server.bitbank import Public
+    public = Public()
+    public.get_candles()
+
